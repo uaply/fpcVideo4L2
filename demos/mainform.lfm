@@ -1,0 +1,158 @@
+object FormMain: TFormMain
+  Left = 115
+  Height = 640
+  Top = 121
+  Width = 991
+  Caption = 'Video Capture Example'
+  ClientHeight = 640
+  ClientWidth = 991
+  Font.Color = clBlack
+  Font.Height = -12
+  Font.Pitch = fpVariable
+  Font.Quality = fqDraft
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  Position = poDesktopCenter
+  LCLVersion = '1.1'
+  object EditDevice: TEdit
+    Left = 32
+    Height = 22
+    Top = 8
+    Width = 112
+    OnEditingDone = EditDeviceEditingDone
+    TabOrder = 7
+    Text = '/dev/video0'
+  end
+  object CheckBoxOpenClose: TCheckBox
+    Left = 160
+    Height = 22
+    Top = 8
+    Width = 80
+    AutoSize = False
+    Caption = 'Open'
+    OnChange = CheckBoxOpenCloseChange
+    TabOrder = 9
+  end
+  object EditBufferCount: TEdit
+    Left = 408
+    Height = 22
+    Top = 8
+    Width = 48
+    OnEditingDone = EditBufferCountEditingDone
+    TabOrder = 1
+    Text = '4'
+  end
+  object CheckBoxCapture: TCheckBox
+    Left = 248
+    Height = 22
+    Top = 8
+    Width = 80
+    AutoSize = False
+    Caption = 'Capture'
+    OnChange = CheckBoxCaptureChange
+    TabOrder = 0
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 617
+    Width = 991
+    Panels = <>
+  end
+  object EditFrameRate: TEdit
+    Left = 560
+    Height = 22
+    Top = 8
+    Width = 48
+    OnEditingDone = EditFrameRateEditingDone
+    TabOrder = 2
+    Text = '30'
+  end
+  object MemoInfo: TMemo
+    Left = 664
+    Height = 88
+    Top = 528
+    Width = 320
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentFont = False
+    ScrollBars = ssAutoBoth
+    TabOrder = 6
+  end
+  object ButtonUpdateControls: TButton
+    Left = 736
+    Height = 25
+    Top = 496
+    Width = 72
+    Caption = 'Refresh'
+    OnClick = ButtonUpdateControlsClick
+    TabOrder = 4
+  end
+  object ButtonDefaultControls: TButton
+    Left = 824
+    Height = 25
+    Top = 496
+    Width = 75
+    Caption = 'Defaults'
+    OnClick = ButtonDefaultControlsClick
+    TabOrder = 5
+  end
+  object PanelControls: TScrollBox
+    Left = 664
+    Height = 480
+    Top = 8
+    Width = 320
+    HorzScrollBar.Page = 316
+    VertScrollBar.Page = 476
+    TabOrder = 3
+  end
+  object Label1: TLabel
+    Left = 344
+    Height = 18
+    Top = 12
+    Width = 60
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Buffers:'
+    ParentColor = False
+  end
+  object LabelError: TLabel
+    Left = 17
+    Height = 18
+    Top = 529
+    Width = 631
+    AutoSize = False
+    ParentColor = False
+    OnClick = LabelErrorClick
+  end
+  object FrameRate: TLabel
+    Left = 472
+    Height = 18
+    Top = 12
+    Width = 85
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'FrameRate:'
+    ParentColor = False
+  end
+  object PaintBox: TPaintBox
+    Left = 8
+    Height = 480
+    Top = 40
+    Width = 640
+  end
+  object Video: TVideo4L2Device
+    Device = '/dev/video0'
+    Width = 640
+    Height = 480
+    PixelFormat = 1448695129
+    FourCC = 'YUYV'
+    FrameRate = 30
+    BufferCount = 4
+    OnFrameSynchronized = VideoFrameSynchronized
+    left = 88
+    top = 560
+  end
+end

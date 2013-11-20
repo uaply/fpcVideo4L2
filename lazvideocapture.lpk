@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="LazVideoCapture"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Version Major="1" Release="1"/>
+    <Files Count="4">
+      <Item1>
+        <Filename Value="videodev2.pas"/>
+        <UnitName Value="videodev2"/>
+      </Item1>
+      <Item2>
+        <Filename Value="videocapture.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="VideoCapture"/>
+      </Item2>
+      <Item3>
+        <Filename Value="yuv2rgb.pas"/>
+        <UnitName Value="YUV2RGB"/>
+      </Item3>
+      <Item4>
+        <Filename Value="libv4l2.pas"/>
+        <UnitName Value="libv4l2"/>
+      </Item4>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <CustomOptions Items="ExternHelp" Version="2">
+      <_ExternHelp Items="Count"/>
+    </CustomOptions>
+  </Package>
+</CONFIG>

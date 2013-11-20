@@ -1,0 +1,13 @@
+*.[oa]
+*.ppu
+*.lps
+*.rst
+*.compiled
+*.bak
+*.exe
+*.dll
+*.dbg
+*.so
+backup
+lib
+examplevideocapture
