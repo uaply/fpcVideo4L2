@@ -275,7 +275,6 @@ begin
   for i:=0 to Video.ControlsInfo.Count-1 do begin
     with Video.ControlsInfo[i] do begin
       Control:=PanelControls.Controls[i*2+1];
-      //Writeln((Control as TLabel).Caption);
       case ControlType of
         V4L2_CTRL_TYPE_INTEGER: begin
           (Control as TTrackBar).Position:=Value;
