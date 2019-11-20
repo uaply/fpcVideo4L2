@@ -1,0 +1,2 @@
+// install on RasPi
+sudo apt-get install qv4l2 libv4l-dev
