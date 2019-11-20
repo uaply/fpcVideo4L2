@@ -14,7 +14,9 @@ interface
 uses
   Classes, SysUtils, videodev2;
 
-{$define NOT_USELIBV4L2}
+// af: For RasPi you have to activate USELIBV4L2
+{$define USELIBV4L2}
+{.$define NONBLOCKING}
 
 type
   EVideo4L2Exception = class(Exception)
@@ -110,6 +112,7 @@ type
     Device: TVideo4L2Device;
     VideoBufferMemory: pointer;
     VideoBufferBytes: integer;
+    VideoBufferLength: longword;
     VideoBufferError: boolean;
   protected
     procedure Execute; override;
@@ -139,6 +142,7 @@ type
     FWidth: integer;
     FHeight: integer;
     FPixelFormat: integer;
+    FColorSpace: integer;
     FFrameRate: integer;
     FBufferCount: integer;
     procedure SetDevice(ADevice: string);
@@ -163,6 +167,7 @@ type
     procedure OpenDevice;
     procedure CloseDevice;
     procedure SetFormat(AWidth,AHeight:integer;APixelFormat:integer);
+    procedure SetPixFormat(AWidth,AHeight:integer;APixelFormat:integer);
     procedure SetStreamFrameRate(AFrameRate:integer);
     procedure InitBuffers(ABufferCount:integer);
     procedure CloseBuffers;
@@ -196,11 +201,11 @@ implementation
 
 {$ifdef linux}
 uses
+  BaseUnix
   {$ifdef USELIBV4L2}
-  libv4l2;
-  {$else}
-  BaseUnix;
+  ,libv4l2
   {$endif}
+  ;
 {$else}
 {$WARNING Video4L2 is not avialiable for this platform!}
 {$endif}
@@ -214,6 +219,12 @@ const
 type
   // Type used for direct conversion of V4L2_PIX_FMT_* integer to Pascal string
   TFourCCArray = array [0..3] of char;
+
+
+procedure Register;
+begin
+  RegisterComponents('Video4L2',[TVideo4L2Device]);
+end;
 
 { TVideoControlMenu }
 
@@ -306,13 +317,23 @@ end;
 { TVideo4L2CaptureThread }
 
 constructor TVideo4L2CaptureThread.Create(ADevice: TVideo4L2Device);
+var
+  i:integer;
 begin
   Device:=ADevice;
+  VideoBufferLength:=0;
+  for i:=0 to Device.BufferCount do
+      if VideoBufferLength<Device.VideoBuffer[i].len
+         then VideoBufferLength:=Device.VideoBuffer[i].len;
+  VideoBufferMemory := AllocMem(VideoBufferLength);
   inherited Create(True);
 end;
 
 destructor TVideo4L2CaptureThread.Destroy;
 begin
+  FreeMem(VideoBufferMemory);
+  VideoBufferMemory:=nil;
+  VideoBufferLength := 0;
   inherited Destroy;
 end;
 
@@ -324,54 +345,87 @@ end;
 procedure TVideo4L2CaptureThread.Execute;
 var
   vbuf: v4l2_buffer;
-  i:integer;
+  buftype:Longword;
+  {$ifdef NONBLOCKING}
+  Res: Integer;
+  FDStatus: TFDSet;
+  Time: timeval;
+  {$endif}
 begin
+
+  buftype:=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  if Device.DevIoctl(VIDIOC_STREAMON, @buftype)<0 then
+     raise EVideo4L2Exception.Create('Capture Thread: Stream On failed');
+
   try
-    while not Terminated do begin
+
+    while not Terminated do
+    begin
+
+      {$ifdef NONBLOCKING}
+      repeat
+        fpFD_ZERO(FDStatus);
+        fpFD_SET(Device.FHandle, FDStatus);
+        Time.tv_sec := 1;
+        Time.tv_usec := 0;
+        Res := fpSelect(Device.FHandle + 1, @FDStatus, nil, nil, @Time);
+      until (Res <> -1) or (errno <> ESysEINTR) or (Terminated);
+
+      if Terminated then break;
+
+      if Res = -1 then
+         raise EVideo4L2Exception.Create('Capture Thread: Failed waiting for CameraStream');
+      {$endif}
+
       FillChar({%H-}vbuf, SizeOf(vbuf), 0);
       vbuf._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
       vbuf.memory := V4L2_MEMORY_MMAP;
-
-      // Wait for data
-      if Device.DevIoctl(VIDIOC_DQBUF, @vbuf)<0 then begin
-        if Terminated then begin
-          break; // Dequeue request failed because we want to stop
-        end else begin
-          raise EVideo4L2Exception.Create('Capture Thread: Unable to dequeue buffer');
+      if Device.DevIoctl(VIDIOC_DQBUF, @vbuf)<0 then
+      begin
+        case (errno) of
+          {$ifdef NONBLOCKING}
+      	  ESysEAGAIN: continue;
+          {$endif}
+          ESysEIO:continue;// it should be possible to continue !!
+        else
+          raise EVideo4L2Exception.Create('Capture Thread: Unable to dequeue buffer (index '+IntToStr(vbuf.index)+')');
         end;
       end;
 
-      VideoBufferMemory:=Device.VideoBuffer[vbuf.index].mem;
-      VideoBufferBytes:=vbuf.bytesused;
+      VideoBufferBytes:=vbuf.length;
+      if Device.PixelFormat = V4L2_PIX_FMT_MJPEG then VideoBufferBytes:=vbuf.bytesused;
+
+      FillChar({%H-}VideoBufferMemory^, VideoBufferLength, 0);
+
+      Move(Device.VideoBuffer[vbuf.index].mem^, VideoBufferMemory^, VideoBufferBytes);
+
+      //old (and fast ...)
+      //VideoBufferMemory:=Device.VideoBuffer[vbuf.index].mem;
+
       VideoBufferError:=((vbuf.flags and V4L2_BUF_FLAG_ERROR)<>0);
-      // OnFrame runs in capture thread context
+
+      // Normal capture event
       if Assigned(Device.OnFrame) then begin
         Device.OnFrame(Device,VideoBufferMemory,VideoBufferBytes,VideoBufferError);
       end;
-      // OnFrameSynchronized runs in main thread
+
+      // Synchronized normal capture event
       if Assigned(Device.OnFrameSynchronized) then begin
         Synchronize(@CallOnFrameSynchronized);
       end;
 
+      if Terminated then break;
+
       // Re-submit the buffer
-      if Device.DevIoctl(VIDIOC_QBUF, @vbuf)<0 then begin
-        raise EVideo4L2Exception.Create('Capture Thread: Unable to queue buffer index '+IntToStr(vbuf.index));
-      end;
+      if Device.DevIoctl(VIDIOC_QBUF, @vbuf)<0 then
+         raise EVideo4L2Exception.Create('Capture Thread: Unable to queue buffer index '+IntToStr(vbuf.index));
+
     end;
-  except
-    on E: Exception do begin
-      Writeln('Thread Execute exception');
-      Writeln(E.Message);
-      Writeln('Exception occurred at $',HexStr(ExceptAddr),':');
-      Writeln(BackTraceStrFunc(ExceptAddr));
-      if (ExceptFrameCount>0) then begin
-        for i:=0 to ExceptFrameCount-1 do begin
-          Writeln(BackTraceStrFunc(ExceptFrames[i]));
-        end;
-      end;
-      Writeln;
-      raise;
-    end;
+
+  finally
+    buftype:=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if Device.DevIoctl(VIDIOC_STREAMOFF, @buftype)<0 then
+       raise EVideo4L2Exception.Create('Capture Thread: Stream Off failed');
   end;
 end;
 
@@ -391,27 +445,14 @@ begin
   FCapture:=False;
   FWidth:=640;
   FHeight:=480;
-  FPixelFormat:=V4L2_PIX_FMT_YUYV;
-  FFrameRate:=30;
+  FPixelFormat:=V4L2_PIX_FMT_MJPEG;
+  FFrameRate:=10;
   FBufferCount:=4;
 end;
 
 destructor TVideo4L2Device.Destroy;
 begin
-  {
-  if Assigned(CaptureThread) then begin
-    CaptureThread.FreeOnTerminate:=True;
-    CaptureThread.Terminate;
-  end;
-  }
-
-  //? How to safely terminate thread without waiting for it?
-  {
-    The problem arises not with thread execution itself,
-    but with postponed Synronize'd method, which could be called
-    after both the thread and owner object with buffers are destroyed.
-  }
-  StopStream; //! Too safe approach for rude .Destroy method
+  StopStream;
 
   // Exception-safe operations
   UnmapBuffers;
@@ -425,9 +466,9 @@ procedure TVideo4L2Device.OpenDevice;
 begin
   {$ifdef linux}
   {$ifdef USELIBV4L2}
-  FHandle:=v4l2_open(PChar(FDevice),O_RDWR);
+  FHandle:=v4l2_open(PChar(FDevice),O_RDWR{$ifdef NONBLOCKING} or O_NONBLOCK{$endif});
   {$else}
-  FHandle:=FpOpen(PChar(FDevice),O_RDWR);
+  FHandle:=FpOpen(PChar(FDevice),O_RDWR{$ifdef NONBLOCKING} or O_NONBLOCK{$endif});
   {$endif}
   if FHandle<0 then begin
     raise EVideo4L2Exception.Create('Unable to open video device '''+FDevice+'''');
@@ -453,13 +494,16 @@ function TVideo4L2Device.DevIoctl(request: integer; data: pointer):integer;
 begin
   Result:=-1;
   {$ifdef linux}
-  if FHandle>=0 then begin
+  if FHandle>=0 then
+  begin
+    repeat
     {$ifdef USELIBV4L2}
     Result:=v4l2_ioctl(FHandle,request,data);
     {$else}
     Result:=FpIOCtl(FHandle,request,data);
     {$endif}
-  end;
+    until not ((-1 = Result) and (ESysEINTR=errno));
+  end else raise EVideo4L2Exception.Create('No device handle !!');
   {$endif}
 end;
 
@@ -471,7 +515,7 @@ begin
     {$ifdef USELIBV4L2}
     Result:=v4l2_mmap(nil, len, PROT_READ, MAP_SHARED, FHandle, offset);
     {$else}
-    Result:=FpMMap(nil, len, PROT_READ, MAP_SHARED, FHandle, offset);
+    Result:=FpMMap(nil, len, PROT_READ, MAP_SHARED, FHandle, offset DIV $1000);
     {$endif}
   end;
   {$endif}
@@ -492,15 +536,21 @@ begin
 end;
 
 procedure TVideo4L2Device.SetFormat(AWidth,AHeight:integer;APixelFormat:integer);
-var format: v4l2_format;
+var
+  format: v4l2_format;
 begin
   FillChar({%H-}format, SizeOf(format), 0);
   format._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  if DevIoctl(VIDIOC_G_FMT, @format)<0 then
+  begin
+    raise EVideo4L2Exception.Create('Unable to request available formats');
+  end;
   format.fmt.pix.width := AWidth;
   format.fmt.pix.height := AHeight;
   format.fmt.pix.pixelformat := APixelFormat;
-  format.fmt.pix.field := V4L2_FIELD_ANY;
-  if DevIoctl(VIDIOC_S_FMT, @format)<0 then begin
+  //format.fmt.pix.field := V4L2_FIELD_ANY;
+  if DevIoctl(VIDIOC_S_FMT, @format)<0 then
+  begin
     raise EVideo4L2Exception.Create('Unable to set video format '+IntToStr(AWidth)+'x'+IntToStr(AHeight)+' '+TFourCCArray(APixelFormat));
   end;
   // Update to actual values
@@ -509,21 +559,54 @@ begin
   FPixelFormat:=format.fmt.pix.pixelformat;
 end;
 
+procedure TVideo4L2Device.SetPixFormat(AWidth,AHeight:integer;APixelFormat:integer);
+var
+  format: v4l2_pix_format;
+begin
+  FillChar({%H-}format, SizeOf(format), 0);
+  if DevIoctl(VIDIOC_G_FMT, @format)<0 then
+  begin
+    raise EVideo4L2Exception.Create('Unable to request available formats');
+  end;
+  format.width := AWidth;
+  format.height := AHeight;
+  format.pixelformat := APixelFormat;
+  //format.field := V4L2_FIELD_NONE;
+  if DevIoctl(VIDIOC_S_FMT, @format)<0 then
+  begin
+    raise EVideo4L2Exception.Create('Unable to set video format '+IntToStr(AWidth)+'x'+IntToStr(AHeight)+' '+TFourCCArray(APixelFormat));
+  end;
+  // Update to actual values
+  FWidth:=format.width;
+  FHeight:=format.height;
+  FPixelFormat:=format.pixelformat;
+  FColorSpace:=format.colorspace;
+end;
+
+
 procedure TVideo4L2Device.SetStreamFrameRate(AFrameRate:integer);
-var streamparm: v4l2_streamparm;
+var
+  streamparm: v4l2_streamparm;
 begin
   FillChar({%H-}streamparm, SizeOf(streamparm), 0);
   streamparm._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  streamparm.parm.capture.timeperframe.numerator := 1;
-  streamparm.parm.capture.timeperframe.denominator := AFrameRate;
-  if DevIoctl(VIDIOC_S_PARM, @streamparm)<0 then begin
-    raise EVideo4L2Exception.Create('Unable to set frame rate '+IntToStr(AFrameRate));
+  if DevIoctl(VIDIOC_G_PARM, @streamparm)<0 then
+  begin
+    raise EVideo4L2Exception.Create('Unable to request available frame rates');
   end;
-  if streamparm.parm.capture.timeperframe.numerator<>1 then begin
-    raise EVideo4L2Exception.Create('Unsupported value obtained while setting FrameRate '+IntToStr(AFrameRate)+' (returned value is '+IntToStr(streamparm.parm.capture.timeperframe.numerator)+'/'+IntToStr(streamparm.parm.capture.timeperframe.denominator)+')');
+  if (streamparm.parm.capture.capability AND V4L2_CAP_TIMEPERFRAME)<>0 then
+  begin
+    streamparm.parm.capture.timeperframe.numerator := 1;
+    streamparm.parm.capture.timeperframe.denominator := AFrameRate;
+    if DevIoctl(VIDIOC_S_PARM, @streamparm)<0 then begin
+      raise EVideo4L2Exception.Create('Unable to set frame rate '+IntToStr(AFrameRate));
+    end;
+    if streamparm.parm.capture.timeperframe.numerator<>1 then begin
+      raise EVideo4L2Exception.Create('Unsupported value obtained while setting FrameRate '+IntToStr(AFrameRate)+' (returned value is '+IntToStr(streamparm.parm.capture.timeperframe.numerator)+'/'+IntToStr(streamparm.parm.capture.timeperframe.denominator)+')');
+    end;
+    // Update to actual values
+    FFrameRate:=streamparm.parm.capture.timeperframe.denominator;
   end;
-  // Update to actual values
-  FFrameRate:=streamparm.parm.capture.timeperframe.denominator;
 end;
 
 procedure TVideo4L2Device.UnmapBuffers;
@@ -543,16 +626,29 @@ procedure TVideo4L2Device.InitBuffers(ABufferCount:integer);
 var
   reqbuf: v4l2_requestbuffers;
   vbuf: v4l2_buffer;
+  cap: v4l2_capability;
   i:integer;
   map:pointer;
 begin
+
+  FillChar({%H-}cap, SizeOf(cap), 0);
+  if DevIoctl(VIDIOC_QUERYCAP, @cap)<0 then
+  begin
+    raise EVideo4L2Exception.Create('Unable to query capacities: '+SysErrorMessage(FpGetErrNo()));
+  end;
+  if (cap.capabilities AND V4L2_CAP_VIDEO_CAPTURE)=0 then
+  begin
+    raise EVideo4L2Exception.Create('No video capture device: '+SysErrorMessage(FpGetErrNo()));
+  end;
+
   UnmapBuffers; // Unmap current buffers
   FillChar({%H-}reqbuf, SizeOf(reqbuf), 0);
   reqbuf.count := ABufferCount;
   reqbuf._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
   reqbuf.memory := V4L2_MEMORY_MMAP;
+  //reqbuf.memory := V4L2_MEMORY_USERPTR;
   if DevIoctl(VIDIOC_REQBUFS, @reqbuf)<0 then begin
-    raise EVideo4L2Exception.Create('Unable to request '+IntToStr(ABufferCount)+' video buffers');
+    raise EVideo4L2Exception.Create('Unable to request '+IntToStr(ABufferCount)+' video buffers: '+SysErrorMessage(FpGetErrNo()));
   end;
   if (ABufferCount>0) and (reqbuf.count=0) then begin
     raise EVideo4L2Exception.Create('Requested '+IntToStr(ABufferCount)+' video buffers, but got zero');
@@ -569,12 +665,15 @@ begin
   end;
 
   try
-    for i:=0 to reqbuf.count-1 do begin
+    for i:=0 to reqbuf.count-1 do
+    begin
       FillChar({%H-}vbuf, SizeOf(vbuf), 0);
       vbuf.index := i;
       vbuf._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      if DevIoctl(VIDIOC_QUERYBUF, @vbuf)<0 then begin
-        raise EVideo4L2Exception.Create('Unable to query buffer index '+IntToStr(i)+' of '+IntToStr(reqbuf.count));
+      vbuf.memory := V4L2_MEMORY_MMAP;
+      if DevIoctl(VIDIOC_QUERYBUF, @vbuf)<0 then
+      begin
+        raise EVideo4L2Exception.Create('Unable to query buffer index '+IntToStr(i)+' of '+IntToStr(reqbuf.count)+': '+SysErrorMessage(FpGetErrNo()));
       end;
 
       map:=DevMMap(vbuf.length, vbuf.m.offset);
@@ -591,9 +690,10 @@ begin
       vbuf._type := V4L2_BUF_TYPE_VIDEO_CAPTURE;
       vbuf.memory := V4L2_MEMORY_MMAP;
       if DevIoctl(VIDIOC_QBUF, @vbuf)<0 then begin
-        raise EVideo4L2Exception.Create('Unable to queue buffer index '+IntToStr(i)+' of '+IntToStr(reqbuf.count));
+        raise EVideo4L2Exception.Create('Unable to queue buffer index '+IntToStr(i)+' of '+IntToStr(reqbuf.count)+': '+SysErrorMessage(FpGetErrNo()));
       end;
     end;
+
   except
     on E: Exception do begin
       // Unmap all mapped buffers on failure
@@ -609,27 +709,17 @@ begin
 end;
 
 procedure TVideo4L2Device.StartStream;
-var buftype: longint;
 begin
   if not Assigned(CaptureThread) then begin
-    buftype:=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if DevIoctl(VIDIOC_STREAMON, @buftype)<0 then begin
-      raise EVideo4L2Exception.Create('Stream On failed');
-    end;
     CaptureThread:=TVideo4L2CaptureThread.Create(Self);
     CaptureThread.Start;
   end;
 end;
 
 procedure TVideo4L2Device.StopStream;
-var buftype: longint;
 begin
   if Assigned(CaptureThread) then begin
     CaptureThread.Terminate;
-    buftype:=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if DevIoctl(VIDIOC_STREAMOFF, @buftype)<0 then begin
-      raise EVideo4L2Exception.Create('Stream Off failed');
-    end;
     CaptureThread.WaitFor;
     FreeAndNil(CaptureThread);
   end;
@@ -676,6 +766,13 @@ begin
       Maximum:=queryctrl.maximum;
       Step:=queryctrl.step;
       DefaultValue:=queryctrl.default_value;
+      if (DefaultValue>Maximum) OR (DefaultValue<Minimum) then
+      begin
+        DefaultValue:=(Maximum+Minimum) DIV 2;
+        if LowerCase(Name)='contrast' then DefaultValue:=0;
+        if LowerCase(Name)='gamma' then DefaultValue:=110;
+        if LowerCase(Name)='exposure_auto' then DefaultValue:=3;
+      end;
       FlagDisabled:=(queryctrl.flags and V4L2_CTRL_FLAG_DISABLED)<>0;
       FlagGrabbed:=(queryctrl.flags and V4L2_CTRL_FLAG_GRABBED)<>0;
       FlagReadOnly:=(queryctrl.flags and V4L2_CTRL_FLAG_READ_ONLY)<>0;
@@ -691,20 +788,19 @@ begin
           FillChar({%H-}querymenu, SizeOf(querymenu), 0);
           querymenu.id:=queryctrl.id;
           querymenu.index:=i;
-          if DevIoctl(VIDIOC_QUERYMENU, @querymenu)=0 then begin
-            with Menu.Add do begin
-              Index:=querymenu.index;
-              if Index=DefaultValue then begin
-                DefaultValueIndex:=Menu.Count-1;
-              end;
-              if queryctrl._type=V4L2_CTRL_TYPE_INTEGER_MENU then begin
-                TypeInteger:=True;
-                Int64Value:=querymenu.u.value;
-                Name:=IntToStr(querymenu.u.value);
-              end else begin
-                TypeInteger:=False;
-                Name:=querymenu.u.name;
-              end;
+          if DevIoctl(VIDIOC_QUERYMENU, @querymenu)<0 then continue;
+          with Menu.Add do begin
+            Index:=querymenu.index;
+            if Index=DefaultValue then begin
+              DefaultValueIndex:=Menu.Count-1;
+            end;
+            if queryctrl._type=V4L2_CTRL_TYPE_INTEGER_MENU then begin
+              TypeInteger:=True;
+              Int64Value:=querymenu.u.value;
+              Name:=IntToStr(querymenu.u.value);
+            end else begin
+              TypeInteger:=False;
+              Name:=querymenu.u.name;
             end;
           end;
         end;
@@ -745,7 +841,7 @@ begin
   for i:=0 to ControlsInfo.Count-1 do begin
     try
       with ControlsInfo[i] do begin
-        SetValue(DefaultValueIndex);
+        if NOT FlagInactive then SetValue(DefaultValueIndex);
       end;
     except
       on E: EVideo4L2Exception do begin
@@ -872,11 +968,6 @@ begin
       FBufferCount:=ABufferCount;
     end;
   end;
-end;
-
-procedure Register;
-begin
-  RegisterComponents('Video4L2',[TVideo4L2Device]);
 end;
 
 end.

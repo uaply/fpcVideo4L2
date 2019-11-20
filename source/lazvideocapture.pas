@@ -4,10 +4,12 @@
 
 unit LazVideoCapture;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
-  videodev2, VideoCapture, YUV2RGB, libv4l2, LazarusPackageIntf;
+  videodev2, VideoCapture, YUV2RGB, libv4l2, uvcvideo, v4l2_subdev, 
+  LazarusPackageIntf;
 
 implementation
 

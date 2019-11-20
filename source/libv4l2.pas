@@ -25,6 +25,8 @@ unit libv4l2;
   
 interface
   
+{$L libv4l2.so.0}
+
 uses
   ctypes;
 
@@ -43,7 +45,7 @@ type
   status messages to a file, when NULL errors will get send to stderr  }
 var
   // You should use libc fopen() if you want to assign this external variable.
-  v4l2_log_file: PFILE; external 'libv4l2' name 'v4l2_log_file';
+  v4l2_log_file: PFILE; external name 'v4l2_log_file';
 
 { Just like your regular open/close/etc, except that format conversion is
   done if necessary when capturing. That is if you (try to) set a capture
@@ -67,17 +69,17 @@ var
   as it would with a real ioctl, but will cause libv4l2 to break, and you
   get to keep both pieces.
 }
-function v4l2_open(filename:Pchar; oflag:longint;args:array of const):longint; cdecl; external 'libv4l2' name 'v4l2_open';
-function v4l2_open(filename:Pchar; oflag:longint):longint; cdecl; varargs; external 'libv4l2' name 'v4l2_open';
-function v4l2_close(fd:longint):longint; cdecl; external 'libv4l2' name 'v4l2_close';
-function v4l2_dup(fd:longint):longint; cdecl; external 'libv4l2' name 'v4l2_dup';
-function v4l2_ioctl(fd:longint; request:dword;args:array of const):longint; cdecl; external 'libv4l2' name 'v4l2_ioctl';
-function v4l2_ioctl(fd:longint; request:dword):longint;cdecl; varargs; external 'libv4l2' name 'v4l2_ioctl';
-function v4l2_ioctl(fd:longint; request:dword;data:pointer):longint; cdecl; external 'libv4l2' name 'v4l2_ioctl';
-function v4l2_read(fd:longint; buffer:pointer; n:size_t):ssize_t; cdecl; external 'libv4l2' name 'v4l2_read';
-function v4l2_write(fd:longint; buffer:pointer; n:size_t):ssize_t; cdecl; external 'libv4l2' name 'v4l2_write';
-function v4l2_mmap(start:pointer; length:size_t; prot:longint; flags:longint; fd:longint; offset:int64_t):pointer; cdecl; external 'libv4l2' name 'v4l2_mmap';
-function v4l2_munmap(_start:pointer; length:size_t):longint; cdecl; external 'libv4l2' name 'v4l2_munmap';
+function v4l2_open(filename:Pchar; oflag:longint;args:array of const):longint; cdecl; external name 'v4l2_open';
+function v4l2_open(filename:Pchar; oflag:longint):longint; cdecl; varargs; external name 'v4l2_open';
+function v4l2_close(fd:longint):longint; cdecl; external name 'v4l2_close';
+function v4l2_dup(fd:longint):longint; cdecl; external name 'v4l2_dup';
+function v4l2_ioctl(fd:longint; request:dword;args:array of const):longint; cdecl; external name 'v4l2_ioctl';
+function v4l2_ioctl(fd:longint; request:dword):longint;cdecl; varargs; external name 'v4l2_ioctl';
+function v4l2_ioctl(fd:longint; request:dword;data:pointer):longint; cdecl; external name 'v4l2_ioctl';
+function v4l2_read(fd:longint; buffer:pointer; n:size_t):ssize_t; cdecl; external name 'v4l2_read';
+function v4l2_write(fd:longint; buffer:pointer; n:size_t):ssize_t; cdecl; external name 'v4l2_write';
+function v4l2_mmap(start:pointer; length:size_t; prot:longint; flags:longint; fd:longint; offset:int64_t):pointer; cdecl; external name 'v4l2_mmap';
+function v4l2_munmap(_start:pointer; length:size_t):longint; cdecl; external name 'v4l2_munmap';
 
 { Misc utility functions  }
 
@@ -87,12 +89,12 @@ function v4l2_munmap(_start:pointer; length:size_t):longint; cdecl; external 'li
 
   Normally returns 0, even if the cid did not exist or was locked, returns
   non 0 when an other error occured.  }
-function v4l2_set_control(fd:longint; cid:longint; value:longint):longint;external 'libv4l2' name 'v4l2_set_control';
+function v4l2_set_control(fd:longint; cid:longint; value:longint):longint;external name 'v4l2_set_control';
 
 { This function returns a value of 0 - 65535, scaled to from the actual range
   of the given v4l control id. When the cid does not exist, or could not be
   accessed -1 is returned.  }
-function v4l2_get_control(fd:longint; cid:longint):longint;external 'libv4l2' name 'v4l2_get_control';
+function v4l2_get_control(fd:longint; cid:longint):longint;external name 'v4l2_get_control';
 
 { "low level" access functions, these functions allow somewhat lower level
   access to libv4l2 (currently there only is v4l2_fd_open here)  }
@@ -114,7 +116,7 @@ const
   
   Returns fd on success, -1 if the fd is not suitable for use through libv4l2
   (note the fd is left open in this case).  }
-function v4l2_fd_open(fd:longint; v4l2_flags:longint):longint;external 'libv4l2' name 'v4l2_fd_open';
+function v4l2_fd_open(fd:longint; v4l2_flags:longint):longint;external name 'v4l2_fd_open';
 
 implementation
 
