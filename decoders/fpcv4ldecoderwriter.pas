@@ -8,8 +8,7 @@ unit fpcV4LDecoderWriter;
 interface
 
 uses
-  RGB16writer, RGB24writer, RGB32writer, SRGGB82RGB, YUV2RGB, 
-  LazarusPackageIntf;
+  RGB16writer, RGB24writer, RGB32writer, SRGGB82RGB, LazarusPackageIntf;
 
 implementation
 
