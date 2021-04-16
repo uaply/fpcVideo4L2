@@ -2,7 +2,7 @@
 <CONFIG>
   <Package Version="4">
     <PathDelim Value="\"/>
-    <Name Value="LazVideoCapture"/>
+    <Name Value="LazV4LCapture"/>
     <Type Value="RunAndDesignTime"/>
     <Author Value="Copyright (C) 2013 Yuriy Pilgun"/>
     <CompilerOptions>
