@@ -20,7 +20,7 @@ This version is isolated from his ZXing version and working on RasPi 3.x too
 "/>
     <License Value="This program is provided under the terms of the MIT License"/>
     <Version Major="1" Minor="1" Release="1" Build="1"/>
-    <Files Count="6">
+    <Files Count="5">
       <Item1>
         <Filename Value="videodev2.pas"/>
         <UnitName Value="videodev2"/>
@@ -31,21 +31,17 @@ This version is isolated from his ZXing version and working on RasPi 3.x too
         <UnitName Value="VideoCapture"/>
       </Item2>
       <Item3>
-        <Filename Value="yuv2rgb.pas"/>
-        <UnitName Value="YUV2RGB"/>
-      </Item3>
-      <Item4>
         <Filename Value="libv4l2.pas"/>
         <UnitName Value="libv4l2"/>
-      </Item4>
-      <Item5>
+      </Item3>
+      <Item4>
         <Filename Value="uvcvideo.pas"/>
         <UnitName Value="uvcvideo"/>
-      </Item5>
-      <Item6>
+      </Item4>
+      <Item5>
         <Filename Value="v4l2_subdev.pas"/>
         <UnitName Value="v4l2_subdev"/>
-      </Item6>
+      </Item5>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>
