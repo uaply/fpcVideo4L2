@@ -8,8 +8,7 @@ unit LazVideoCapture;
 interface
 
 uses
-  videodev2, VideoCapture, YUV2RGB, libv4l2, uvcvideo, v4l2_subdev, 
-  LazarusPackageIntf;
+  videodev2, VideoCapture, libv4l2, uvcvideo, v4l2_subdev, LazarusPackageIntf;
 
 implementation
 
