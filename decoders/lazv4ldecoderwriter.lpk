@@ -11,7 +11,7 @@
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="4">
+    <Files Count="5">
       <Item1>
         <Filename Value="rgb16writer.pas"/>
         <UnitName Value="RGB16writer"/>
@@ -28,6 +28,10 @@
         <Filename Value="srggb82rgb.pas"/>
         <UnitName Value="SRGGB82RGB"/>
       </Item4>
+      <Item5>
+        <Filename Value="yuv2rgb.pas"/>
+        <UnitName Value="YUV2RGB"/>
+      </Item5>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>
