@@ -2,6 +2,7 @@ unit videodev2;
 
 interface
 
+{$ifdef Linux}
 uses
   unixtype;
 
@@ -3382,6 +3383,7 @@ const
 
 {$endif}
    { _UAPI__LINUX_VIDEODEV2_H  }
+{$ENDIF}
 
 implementation
 

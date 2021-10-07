@@ -11,6 +11,7 @@ unit VideoCapture;
 
 interface
 
+{$ifdef Linux}
 uses
   Classes, SysUtils, videodev2;
 
@@ -195,6 +196,7 @@ type
     property OnFrameSynchronized: TVideo4L2FrameEvent read FOnFrameSynchronized write FOnFrameSynchronized;
   end;
 
+  {$ENDIF}
 procedure Register;
 
 implementation
@@ -210,6 +212,7 @@ uses
 {$WARNING Video4L2 is not avialiable for this platform!}
 {$endif}
 
+{$ifdef linux}
 const
   O_RDWR = 2;
   PROT_READ = $1;
@@ -220,11 +223,14 @@ type
   // Type used for direct conversion of V4L2_PIX_FMT_* integer to Pascal string
   TFourCCArray = array [0..3] of char;
 
-
+{$ENDIF}
 procedure Register;
 begin
+ {$ifdef Linux}
   RegisterComponents('Video4L2',[TVideo4L2Device]);
+  {$ENDIF}
 end;
+{$ifdef Linux}
 
 { TVideoControlMenu }
 
@@ -969,6 +975,6 @@ begin
     end;
   end;
 end;
-
+{$ENDIF}
 end.
 
