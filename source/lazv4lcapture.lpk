@@ -2,22 +2,25 @@
 <CONFIG>
   <Package Version="4">
     <PathDelim Value="\"/>
-    <Name Value="LazVideoCapture"/>
+    <Name Value="LazV4LCapture"/>
+    <Type Value="RunAndDesignTime"/>
+    <Author Value="Copyright (C) 2013 Yuriy Pilgun"/>
     <CompilerOptions>
       <Version Value="11"/>
       <PathDelim Value="\"/>
       <SearchPaths>
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
-      <Other>
-        <CompilerMessages>
-          <MsgFileName Value=""/>
-        </CompilerMessages>
-        <CompilerPath Value="$(CompPath)"/>
-      </Other>
     </CompilerOptions>
-    <Version Major="1" Release="1"/>
-    <Files Count="4">
+    <Description Value="Video4L2 capture and controls enumeration component for Lazarus ONLY FOR SYSTEM WITH V4L working (eg. Linux)
+
+Extended Version from LongDirtyAnimAlf/ZXing.Delphi from July 2018 THX to Alfred
+This version is isolated from his ZXing version and working on RasPi 3.x too
+
+"/>
+    <License Value="This program is provided under the terms of the MIT License"/>
+    <Version Major="1" Minor="1" Release="1" Build="1"/>
+    <Files Count="5">
       <Item1>
         <Filename Value="videodev2.pas"/>
         <UnitName Value="videodev2"/>
@@ -28,15 +31,18 @@
         <UnitName Value="VideoCapture"/>
       </Item2>
       <Item3>
-        <Filename Value="yuv2rgb.pas"/>
-        <UnitName Value="YUV2RGB"/>
-      </Item3>
-      <Item4>
         <Filename Value="libv4l2.pas"/>
         <UnitName Value="libv4l2"/>
+      </Item3>
+      <Item4>
+        <Filename Value="uvcvideo.pas"/>
+        <UnitName Value="uvcvideo"/>
       </Item4>
+      <Item5>
+        <Filename Value="v4l2_subdev.pas"/>
+        <UnitName Value="v4l2_subdev"/>
+      </Item5>
     </Files>
-    <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
       <Item1>
         <PackageName Value="FCL"/>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="LazV4LDecoderWriter"/>
+    <Type Value="RunAndDesignTime"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Files Count="5">
+      <Item1>
+        <Filename Value="rgb16writer.pas"/>
+        <UnitName Value="RGB16writer"/>
+      </Item1>
+      <Item2>
+        <Filename Value="rgb24writer.pas"/>
+        <UnitName Value="RGB24writer"/>
+      </Item2>
+      <Item3>
+        <Filename Value="rgb32writer.pas"/>
+        <UnitName Value="RGB32writer"/>
+      </Item3>
+      <Item4>
+        <Filename Value="srggb82rgb.pas"/>
+        <UnitName Value="SRGGB82RGB"/>
+      </Item4>
+      <Item5>
+        <Filename Value="yuv2rgb.pas"/>
+        <UnitName Value="YUV2RGB"/>
+      </Item5>
+    </Files>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

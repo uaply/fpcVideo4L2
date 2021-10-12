@@ -2,20 +2,20 @@
   This source is only used to compile and install the package.
  }
 
-unit LazVideoCapture;
+unit fpcV4LDecoderWriter;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
-  videodev2, VideoCapture, YUV2RGB, libv4l2, LazarusPackageIntf;
+  RGB16writer, RGB24writer, RGB32writer, SRGGB82RGB, LazarusPackageIntf;
 
 implementation
 
 procedure Register;
 begin
-  RegisterUnit('VideoCapture', @VideoCapture.Register);
 end;
 
 initialization
-  RegisterPackage('LazVideoCapture', @Register);
+  RegisterPackage('fpcV4LDecoderWriter', @Register);
 end.

@@ -2,6 +2,7 @@ unit v4l2_subdev;
 
 interface
 
+{$ifdef linux}
 uses
   videodev2;
 
@@ -418,7 +419,7 @@ const
   VIDIOC_SUBDEV_S_EDID    = LongInt(((_IOC_READ or _IOC_WRITE) shl _IOC_DIRSHIFT) or (Ord('V') shl _IOC_TYPESHIFT) or (41 shl _IOC_NRSHIFT) or (SizeOf(v4l2_subdev_edid) shl _IOC_SIZESHIFT));
 
 {$endif}
-
+{$endif}
 implementation
 
 end.

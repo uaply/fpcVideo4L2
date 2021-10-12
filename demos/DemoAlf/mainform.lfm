@@ -1,0 +1,199 @@
+object FormMain: TFormMain
+  Left = 181
+  Height = 577
+  Top = 116
+  Width = 989
+  Caption = 'ZXing based barcode scanner'
+  ClientHeight = 577
+  ClientWidth = 989
+  Font.Color = clBlack
+  Font.Height = -12
+  Font.Pitch = fpVariable
+  Font.Quality = fqDraft
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  Position = poDesktopCenter
+  object StatusBar: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 554
+    Width = 989
+    Panels = <>
+  end
+  object Bevel1: TBevel
+    Left = 8
+    Height = 490
+    Top = 8
+    Width = 650
+  end
+  object PaintBox: TPaintBox
+    Left = 13
+    Height = 1536
+    Top = 14
+    Width = 2304
+    OnClick = PaintBoxClick
+  end
+  object PageControl1: TPageControl
+    Left = 664
+    Height = 542
+    Top = 8
+    Width = 325
+    ActivePage = GlobalSettingsTabSheet
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    TabIndex = 0
+    TabOrder = 1
+    object GlobalSettingsTabSheet: TTabSheet
+      Caption = 'Global Settings'
+      ClientHeight = 512
+      ClientWidth = 315
+      object Label2: TLabel
+        Left = 8
+        Height = 18
+        Top = 8
+        Width = 143
+        AutoSize = False
+        Caption = 'Video device:'
+        ParentColor = False
+      end
+      object CheckBoxOpenClose: TCheckBox
+        Left = 8
+        Height = 22
+        Top = 35
+        Width = 143
+        AutoSize = False
+        Caption = 'Open video device'
+        OnChange = CheckBoxOpenCloseChange
+        TabOrder = 0
+      end
+      object CheckBoxCapture: TCheckBox
+        Left = 8
+        Height = 22
+        Top = 63
+        Width = 143
+        AutoSize = False
+        Caption = 'Start Capturing Video'
+        OnChange = CheckBoxCaptureChange
+        TabOrder = 1
+      end
+      object EditDevice: TEdit
+        Left = 160
+        Height = 28
+        Top = 8
+        Width = 152
+        OnEditingDone = EditDeviceEditingDone
+        TabOrder = 2
+        Text = '/dev/video0'
+      end
+      object Label1: TLabel
+        Left = 193
+        Height = 18
+        Top = 39
+        Width = 60
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = 'Buffers:'
+        ParentColor = False
+      end
+      object FrameRate: TLabel
+        Left = 168
+        Height = 18
+        Top = 64
+        Width = 85
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = 'FrameRate:'
+        ParentColor = False
+      end
+      object EditBufferCount: TEdit
+        Left = 264
+        Height = 28
+        Top = 35
+        Width = 48
+        OnEditingDone = EditBufferCountEditingDone
+        TabOrder = 3
+        Text = '4'
+      end
+      object EditFrameRate: TEdit
+        Left = 264
+        Height = 28
+        Top = 62
+        Width = 48
+        OnEditingDone = EditFrameRateEditingDone
+        TabOrder = 4
+        Text = '5'
+      end
+      object Memo1: TMemo
+        Left = 8
+        Height = 402
+        Top = 100
+        Width = 302
+        Anchors = [akTop, akLeft, akRight, akBottom]
+        ScrollBars = ssBoth
+        TabOrder = 5
+      end
+    end
+    object CameraSettingsTabSheet: TTabSheet
+      Caption = 'Camera Settings'
+      ClientHeight = 512
+      ClientWidth = 315
+      object PanelControls: TScrollBox
+        Left = 0
+        Height = 477
+        Top = 0
+        Width = 315
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alTop
+        Anchors = [akTop, akLeft, akRight, akBottom]
+        TabOrder = 0
+      end
+      object ButtonDefaultControls: TButton
+        Left = -5
+        Height = 25
+        Top = 484
+        Width = 75
+        Anchors = [akRight, akBottom]
+        Caption = 'Defaults'
+        OnClick = ButtonDefaultControlsClick
+        TabOrder = 1
+      end
+      object ButtonUpdateControls: TButton
+        Left = 248
+        Height = 25
+        Top = 484
+        Width = 72
+        Anchors = [akLeft, akBottom]
+        Caption = 'Refresh'
+        OnClick = ButtonUpdateControlsClick
+        TabOrder = 2
+      end
+    end
+  end
+  object BytesLabel: TLabel
+    Left = 616
+    Height = 16
+    Top = 504
+    Width = 32
+    Caption = 'Bytes:'
+    ParentColor = False
+  end
+  object BytesNumberLabel: TLabel
+    Left = 616
+    Height = 16
+    Top = 528
+    Width = 7
+    Caption = '0'
+    ParentColor = False
+  end
+  object MemoInfo: TMemo
+    Left = 56
+    Height = 50
+    Top = 496
+    Width = 312
+    Anchors = [akLeft, akRight, akBottom]
+    Lines.Strings = (
+      'Some extra info:'
+    )
+    TabOrder = 2
+  end
+end
